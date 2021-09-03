@@ -82,13 +82,13 @@ exports.createSchemaCustomization = ({ actions }) => {
 }
 
 async function parseSVG({
-                          source,
-                          uri,
-                          store,
-                          cache,
-                          createNode,
-                          createNodeId
-                        }) {
+  source,
+  uri,
+  store,
+  cache,
+  createNode,
+  createNodeId
+}) {
   // Get remote file
   debug('Downloading ' + source.contentful_id + ': ' + uri)
   const { absolutePath, relativePath, size } = await createRemoteFileNode({
@@ -134,13 +134,13 @@ async function parseSVG({
 }
 
 exports.createResolvers = ({
-                             actions,
-                             cache,
-                             createNodeId,
-                             createResolvers,
-                             store,
-                             reporter
-                           }) => {
+  actions,
+  cache,
+  createNodeId,
+  createResolvers,
+  store,
+  reporter
+}) => {
   const { createNode } = actions
   createResolvers({
     ContentfulAsset: {
@@ -163,9 +163,16 @@ exports.createResolvers = ({
             return null
           }
 
+          if (source.file.details.size > 10000) {
+            return null
+          }
+
           const cacheId =
             'contentful-svg-content-' +
-            crypto.createHash(`md5`).update(url).digest(`hex`)
+            crypto
+              .createHash(`md5`)
+              .update(url)
+              .digest(`hex`)
 
           const result = await queue.add(async () => {
             const uri = `http:${url}`
@@ -195,10 +202,7 @@ exports.createResolvers = ({
 
               debug('Processed and cached ' + url)
 
-              if (result.size < 10000) {
-                return result
-              }
-              return null
+              return result
             } catch (err) {
               console.error(err)
               return null
