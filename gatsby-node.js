@@ -76,21 +76,22 @@ exports.createSchemaCustomization = ({ actions }) => {
       dataURI: String
       absolutePath: String
       relativePath: String
+      size: Int
     }
   `)
 }
 
 async function parseSVG({
-  source,
-  uri,
-  store,
-  cache,
-  createNode,
-  createNodeId
-}) {
+                          source,
+                          uri,
+                          store,
+                          cache,
+                          createNode,
+                          createNodeId
+                        }) {
   // Get remote file
   debug('Downloading ' + source.contentful_id + ': ' + uri)
-  const { absolutePath, relativePath } = await createRemoteFileNode({
+  const { absolutePath, relativePath, size } = await createRemoteFileNode({
     url: uri,
     parentNodeId: source.id,
     store,
@@ -127,18 +128,19 @@ async function parseSVG({
     originalContent: svg,
     dataURI,
     absolutePath,
-    relativePath
+    relativePath,
+    size
   }
 }
 
 exports.createResolvers = ({
-  actions,
-  cache,
-  createNodeId,
-  createResolvers,
-  store,
-  reporter
-}) => {
+                             actions,
+                             cache,
+                             createNodeId,
+                             createResolvers,
+                             store,
+                             reporter
+                           }) => {
   const { createNode } = actions
   createResolvers({
     ContentfulAsset: {
@@ -163,10 +165,7 @@ exports.createResolvers = ({
 
           const cacheId =
             'contentful-svg-content-' +
-            crypto
-              .createHash(`md5`)
-              .update(url)
-              .digest(`hex`)
+            crypto.createHash(`md5`).update(url).digest(`hex`)
 
           const result = await queue.add(async () => {
             const uri = `http:${url}`
@@ -195,7 +194,11 @@ exports.createResolvers = ({
               await cache.set(cacheId, result)
 
               debug('Processed and cached ' + url)
-              return result
+
+              if (result.size < 10000) {
+                return result
+              }
+              return null
             } catch (err) {
               console.error(err)
               return null
